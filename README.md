@@ -1,6 +1,6 @@
-Here’s a personalized version of the README file for your GitHub project:
 
----
+
+
 
 # Sliding Puzzle Solver - By Jagat Naraian Pathak
 
