@@ -1,24 +1,22 @@
 import streamlit as st
 import random
-import copy
 import time
 import heapq
-import os
-
-
-# --- Page Config ---
-st.set_page_config(page_title="Colorful Sliding Puzzle", layout="wide")
 
 # --- Music ---
 MUSIC_PATH = "https://drive.google.com/uc?export=download&id=1o3H3K6Ns-rGAj5nICxCsRo2_zljma3WP"
 st.audio(MUSIC_PATH, format='audio/mp3', start_time=0)
 
-# Rest of your game code...
+# --- Page Config (MUST be first Streamlit command) ---
+st.set_page_config(page_title="Colorful Sliding Puzzle", layout="wide")
 
-
-# --- Custom CSS for colorful tiles and responsiveness ---
+# --- Custom CSS for colorful tiles, sky blue background, and responsiveness ---
 st.markdown("""
     <style>
+    body {
+        background-color: #87CEEB;  /* Sky blue background */
+        font-family: 'Arial', sans-serif;
+    }
     .stButton>button {
         font-size: 24px;
         height: 80px;
@@ -26,16 +24,34 @@ st.markdown("""
         margin: 4px;
         font-weight: bold;
         transition: all 0.2s ease-in-out;
+        background-color: #D8BFD8; /* Ash-Gold Tile Color */
+        color: black;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Shadow effect */
     }
     .stButton>button:hover {
-        transform: scale(1.05);
-        background-color: #ffcccb !important;
+        transform: scale(1.1);  /* Enlarge tile on hover */
+        background-color: #f1c27d !important;  /* Lighter Ash-Gold on hover */
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Enlarge shadow on hover */
+    }
+    .stButton>button:active {
+        transform: scale(0.9);  /* Shrink tile when clicked */
+        background-color: #f1c27d !important;
     }
     .stTextInput>div>input {
         font-size: 20px;
     }
     .block-container {
         padding-top: 2rem;
+    }
+    /* Responsive design for smaller screens */
+    @media (max-width: 768px) {
+        .stButton>button {
+            font-size: 18px;
+            height: 60px;
+        }
+        .stTextInput>div>input {
+            font-size: 16px;
+        }
     }
     </style>
 """, unsafe_allow_html=True)
