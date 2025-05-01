@@ -1,46 +1,38 @@
 import streamlit as st
 import random
-import copy
 import time
 import heapq
 
-# ✅ MUST be first Streamlit command
-st.set_page_config(page_title="Colorful Sliding Puzzle", layout="wide")
+# Must be first command
+st.set_page_config(page_title="Sliding Puzzle Game", layout="wide")
 
-# --- Custom CSS for styling ---
+# --- CSS Styling ---
 st.markdown("""
     <style>
         .title {
             text-align: center;
-            color: #2c3e50;
-            font-size: 36px;
+            font-size: 40px;
             font-weight: bold;
+            color: #273c75;
         }
-        .stButton > button {
-            background-color: #3498db;
-            color: white;
-            border-radius: 10px;
+        .stButton>button {
             font-size: 24px;
             height: 80px;
             width: 100%;
+            border-radius: 12px;
+            background-color: #74b9ff;
+            color: #fff;
+            transition: 0.3s ease-in-out;
         }
-        .stButton > button:hover {
-            background-color: #2980b9;
+        .stButton>button:hover {
+            background-color: #0984e3;
+            transform: scale(1.05);
         }
-        .sidebar .sidebar-content {
-            background-color: #ecf0f1;
-        }
-        .highlight-box {
+        .highlight {
             background-color: #dff9fb;
             padding: 10px;
             border-radius: 8px;
             font-size: 18px;
-        }
-        .dropdown-style {
-            background-color: #fefefe;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            padding: 10px;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -62,7 +54,7 @@ def is_solvable(board, size):
 
 def get_blank(board):
     for i in range(len(board)):
-        for j in range(len(board)):
+        for j in range(len(board[i])):
             if board[i][j] == 0:
                 return i, j
 
@@ -82,121 +74,118 @@ def create_board(size):
         if is_solvable(board_2d, size):
             return board_2d
 
-# --- A* Algorithm ---
 def manhattan_distance(board, size):
     dist = 0
     for i in range(size):
         for j in range(size):
             val = board[i][j]
             if val != 0:
-                target_x, target_y = divmod(val - 1, size)
-                dist += abs(i - target_x) + abs(j - target_y)
+                tx, ty = divmod(val - 1, size)
+                dist += abs(i - tx) + abs(j - ty)
     return dist
 
 def a_star(board, size):
     start = tuple(tuple(row) for row in board)
     goal = tuple(tuple((i * size + j + 1) % (size * size) for j in range(size)) for i in range(size))
 
-    open_list = []
-    heapq.heappush(open_list, (0 + manhattan_distance(board, size), 0, start, []))
-    seen = set()
-    seen.add(start)
+    heap = [(manhattan_distance(board, size), 0, start, [])]
+    visited = set()
+    visited.add(start)
 
-    while open_list:
-        _, g, current, path = heapq.heappop(open_list)
-        if current == goal:
+    while heap:
+        _, g, state, path = heapq.heappop(heap)
+        if state == goal:
             return path
 
-        x, y = get_blank(current)
+        x, y = get_blank(state)
         for nx, ny in valid_moves(x, y, size):
-            new_board = [list(row) for row in current]
+            new_board = [list(row) for row in state]
             new_board[x][y], new_board[nx][ny] = new_board[nx][ny], new_board[x][y]
-            new_tuple = tuple(tuple(row) for row in new_board)
-
-            if new_tuple not in seen:
-                seen.add(new_tuple)
-                heapq.heappush(open_list, (g + 1 + manhattan_distance(new_board, size), g + 1, new_tuple, path + [(x, y, nx, ny)]))
+            new_state = tuple(tuple(row) for row in new_board)
+            if new_state not in visited:
+                visited.add(new_state)
+                heapq.heappush(heap, (
+                    g + 1 + manhattan_distance(new_board, size),
+                    g + 1,
+                    new_state,
+                    path + [(x, y, nx, ny)]
+                ))
     return []
 
 # --- Sidebar Login ---
 with st.sidebar:
-    st.title("Login")
-    player_name = st.text_input("Enter your name:", key="login")
-    size = st.selectbox("Select Puzzle Size:", (3,))  # Only 3x3 supported for now
+    st.title("🧩 Puzzle Options")
+    name = st.text_input("Enter your name:")
+    size = st.selectbox("Select grid size:", [3, 4])
 
-if not player_name:
-    st.warning("Please enter your name to start!")
+if not name:
+    st.warning("Please enter your name in sidebar.")
     st.stop()
 
-# --- Session State Init ---
-if "board" not in st.session_state:
+# --- Init Session ---
+if "board" not in st.session_state or "size" not in st.session_state or st.session_state.size != size:
     st.session_state.board = create_board(size)
     st.session_state.start_time = time.time()
     st.session_state.moves = 0
-    st.session_state.auto_solve_path = []
+    st.session_state.auto_path = []
+    st.session_state.size = size
 
 board = st.session_state.board
 
 # --- Title ---
-st.markdown(f"<div class='title'>🎯 Welcome {player_name}! Solve the 3x3 Sliding Puzzle</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='title'>🎯 {name}'s {size}x{size} Sliding Puzzle</div>", unsafe_allow_html=True)
 
-# --- Puzzle Area & Info ---
-col1, col2 = st.columns([2, 1])
+# --- Puzzle Grid ---
+cols = st.columns(size)
+for i in range(size):
+    row = st.columns(size)
+    for j in range(size):
+        if board[i][j] != 0:
+            if row[j].button(str(board[i][j]), key=f"{i}-{j}"):
+                x, y = get_blank(board)
+                if (i, j) in valid_moves(x, y, size):
+                    board[x][y], board[i][j] = board[i][j], board[x][y]
+                    st.session_state.moves += 1
+                    st.rerun()
+        else:
+            row[j].markdown("### ▢")
 
-with col1:
-    for i in range(size):
-        cols = st.columns(size)
-        for j in range(size):
-            if board[i][j] != 0:
-                if cols[j].button(str(board[i][j]), use_container_width=True, key=(i, j)):
-                    x, y = get_blank(board)
-                    if (i, j) in valid_moves(x, y, size):
-                        board[x][y], board[i][j] = board[i][j], board[x][y]
-                        st.session_state.moves += 1
-                        st.rerun()
+# --- Info + Controls ---
+st.markdown("---")
+c1, c2, c3 = st.columns(3)
 
-with col2:
-    st.subheader("Game Info")
-    elapsed_time = int(time.time() - st.session_state.start_time)
-    st.markdown(f"<div class='highlight-box'>⏱️ Time Elapsed: {elapsed_time} seconds</div>", unsafe_allow_html=True)
-    st.markdown(f"<div class='highlight-box'>🎮 Moves Made: {st.session_state.moves}</div>", unsafe_allow_html=True)
-    st.markdown(f"<div class='highlight-box'>📐 Puzzle Size: {size}x{size}</div>", unsafe_allow_html=True)
-
-    if st.button("Solve with A*"):
-        path = a_star(board, size)
-        if path:
-            st.session_state.auto_solve_path = path
-            st.success("✅ Auto-solving started!")
-
-    if st.button("🔄 Reset Game"):
+with c1:
+    st.markdown(f"<div class='highlight'>⏱️ Time: {int(time.time() - st.session_state.start_time)}s</div>", unsafe_allow_html=True)
+with c2:
+    st.markdown(f"<div class='highlight'>🔁 Moves: {st.session_state.moves}</div>", unsafe_allow_html=True)
+with c3:
+    if st.button("🔄 Reset"):
         st.session_state.board = create_board(size)
         st.session_state.moves = 0
         st.session_state.start_time = time.time()
-        st.session_state.auto_solve_path = []
+        st.session_state.auto_path = []
         st.rerun()
 
-    # 🔽 Dropdown for path
-    with st.expander("📜 View A* Path Steps"):
-        if st.session_state.auto_solve_path:
-            moves_str = "\n".join([
-                f"Move {i+1}: Tile {board[x][y]} from ({x}, {y}) → ({nx}, {ny})"
-                for i, (x, y, nx, ny) in enumerate(st.session_state.auto_solve_path)
-            ])
-            st.text(moves_str)
+st.markdown("---")
+if st.button("🧠 Auto-Solve with A*"):
+    path = a_star(board, size)
+    if path:
+        st.session_state.auto_path = path
+        st.success("Auto-solving started...")
+        st.rerun()
+    else:
+        st.error("No path found!")
 
-            final_path_str = " → ".join([f"({x},{y})→({nx},{ny})" for x, y, nx, ny in st.session_state.auto_solve_path])
-            st.markdown(f"**Final Path String:** `{final_path_str}`")
-
-# --- Win Condition ---
-if sum(board, []) == list(range(1, size*size)) + [0]:
-    elapsed_time = int(time.time() - st.session_state.start_time)
-    st.balloons()
-    st.success(f"🎉 Congratulations {player_name}! You solved it in {st.session_state.moves} moves and {elapsed_time} seconds!")
-
-# --- Animate Auto-Solving ---
-if st.session_state.auto_solve_path:
-    move = st.session_state.auto_solve_path.pop(0)
+# --- Animate Path ---
+if st.session_state.auto_path:
+    move = st.session_state.auto_path.pop(0)
     x, y, nx, ny = move
     board[x][y], board[nx][ny] = board[nx][ny], board[x][y]
-    time.sleep(0.8)
+    time.sleep(0.5)
     st.rerun()
+
+# --- Win Message ---
+flat = sum(board, [])
+if flat == list(range(1, size * size)) + [0]:
+    st.success(f"🎉 Well done, {name}! Solved in {st.session_state.moves} moves and {int(time.time() - st.session_state.start_time)} seconds!")
+    st.balloons()
