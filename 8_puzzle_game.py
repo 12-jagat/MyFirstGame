@@ -3,12 +3,12 @@ import random
 import time
 import heapq
 
+# --- Page Config (MUST be first Streamlit command) ---
+st.set_page_config(page_title="Colorful Sliding Puzzle", layout="wide")
+
 # --- Music ---
 MUSIC_PATH = "https://drive.google.com/uc?export=download&id=1o3H3K6Ns-rGAj5nICxCsRo2_zljma3WP"
 st.audio(MUSIC_PATH, format='audio/mp3', start_time=0)
-
-# --- Page Config (MUST be first Streamlit command) ---
-st.set_page_config(page_title="Colorful Sliding Puzzle", layout="wide")
 
 # --- Custom CSS for colorful tiles, sky blue background, and responsiveness ---
 st.markdown("""
