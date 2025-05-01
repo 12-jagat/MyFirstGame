@@ -206,5 +206,5 @@ if st.session_state.auto_solve_path:
     st.write(f"Moving tile {board[nx][ny]} from ({x}, {y}) to ({nx}, {ny})")
 
     # Add a small delay for animation effect
-    time.sleep(1.3)
+    time.sleep(2)
     st.rerun()
