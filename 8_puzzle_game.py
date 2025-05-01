@@ -5,21 +5,12 @@ import time
 import heapq
 import os
 
-# --- Music ---
-import streamlit as st
+# --- Page Config (MUST be first Streamlit command) ---
+st.set_page_config(page_title="Colorful Sliding Puzzle", layout="wide")
 
 # --- Music ---
 MUSIC_PATH = "https://drive.google.com/uc?export=download&id=1o3H3K6Ns-rGAj5nICxCsRo2_zljma3WP"
-st.audio(MUSIC_PATH, format="audio/mp3", start_time=0)
-
-# --- Page Config ---
-st.set_page_config(page_title="Colorful Sliding Puzzle", layout="wide")
-
-# --- Game Title ---
-st.title("🎯 Welcome to the Colorful Puzzle Game!")
-
-# Add the rest of your game code here
-
+st.audio(MUSIC_PATH, format='audio/mp3', start_time=0)
 
 # --- Custom CSS for colorful tiles and responsiveness ---
 st.markdown("""
@@ -204,4 +195,4 @@ if st.session_state.auto_solve_path:
     x, y, nx, ny = move
     board[x][y], board[nx][ny] = board[nx][ny], board[x][y]
     time.sleep(1)
-    st.rerun() 
+    st.rerun()
