@@ -3,8 +3,41 @@ import random
 import copy
 import time
 import heapq
+import os
 
-# --- Utility functions ---
+# --- Music ---
+MUSIC_PATH = "https://drive.google.com/file/d/1o3H3K6Ns-rGAj5nICxCsRo2_zljma3WP/view?usp=sharing"
+if os.path.exists(MUSIC_PATH):
+    st.audio(MUSIC_PATH, format='audio/mp3', start_time=0)
+
+# --- Page Config (MUST be first Streamlit command) ---
+st.set_page_config(page_title="Colorful Sliding Puzzle", layout="wide")
+
+# --- Custom CSS for colorful tiles and responsiveness ---
+st.markdown("""
+    <style>
+    .stButton>button {
+        font-size: 24px;
+        height: 80px;
+        border-radius: 12px;
+        margin: 4px;
+        font-weight: bold;
+        transition: all 0.2s ease-in-out;
+    }
+    .stButton>button:hover {
+        transform: scale(1.05);
+        background-color: #ffcccb !important;
+    }
+    .stTextInput>div>input {
+        font-size: 20px;
+    }
+    .block-container {
+        padding-top: 2rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- Utility Functions ---
 def is_solvable(board, size):
     flat_board = sum(board, [])
     inv_count = sum(
@@ -41,7 +74,6 @@ def create_board(size):
         if is_solvable(board_2d, size):
             return board_2d
 
-# --- A* Algorithm for Puzzle Solving ---
 def manhattan_distance(board, size):
     dist = 0
     for i in range(size):
@@ -54,10 +86,10 @@ def manhattan_distance(board, size):
 
 def a_star(board, size):
     start = tuple(tuple(row) for row in board)
-    goal = ((1, 2, 3), (4, 5, 6), (7, 8, 0))  # Goal state for 3x3 puzzle
+    goal = tuple(tuple((i * size + j + 1) % (size * size) for j in range(size)) for i in range(size))
 
     open_list = []
-    heapq.heappush(open_list, (0 + manhattan_distance(board, size), 0, start, []))
+    heapq.heappush(open_list, (manhattan_distance(board, size), 0, start, []))
     seen = set()
     seen.add(start)
 
@@ -74,137 +106,94 @@ def a_star(board, size):
 
             if new_tuple not in seen:
                 seen.add(new_tuple)
-                heapq.heappush(open_list, (g + 1 + manhattan_distance(new_board, size), g + 1, new_tuple, path + [(x, y, nx, ny)]))
+                heapq.heappush(open_list, (
+                    g + 1 + manhattan_distance(new_board, size),
+                    g + 1,
+                    new_tuple,
+                    path + [(x, y, nx, ny)]
+                ))
     return []
 
-# --- Streamlit UI ---
-st.set_page_config(page_title="Colorful Sliding Puzzle", layout="wide")
-
-# --- CSS for Styling ---
-st.markdown("""
-    <style>
-    body {
-        background-color: #87CEEB !important; /* Sky blue background */
-        color: #000000 !important; /* Black text */
-    }
-    .stApp {
-        background-color: #87CEEB !important;
-        color: #000000 !important;
-    }
-    .stButton>button {
-        font-size: 24px;
-        height: 80px;
-        border-radius: 12px;
-        margin: 4px;
-        font-weight: bold;
-        background-color: #CBA135 !important; /* Ash gold */
-        color: black !important;
-        border: 2px solid #000000 !important;
-        transition: all 0.2s ease-in-out;
-    }
-    .stButton>button:hover {
-        transform: scale(1.05);
-        background-color: #FFD700 !important; /* Gold on hover */
-        color: black !important;
-    }
-    .stTextInput>div>input {
-        font-size: 20px;
-        background-color: #fff !important;
-        color: black !important;
-    }
-    .block-container {
-        padding-top: 2rem;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# --- Sidebar for login ---
+# --- Sidebar Login ---
 with st.sidebar:
-    st.title("Login")
+    st.title("Login 🎮")
     player_name = st.text_input("Enter your name:", key="login")
-    size = st.selectbox("Select Puzzle Size:", (3,))  # Only 3x3
+    size = 3  # Fixed to 3x3 only
 
 if not player_name:
     st.warning("Please enter your name to start!")
     st.stop()
 
-# Initialize session state
+# --- Session State ---
 if "board" not in st.session_state:
     st.session_state.board = create_board(size)
     st.session_state.start_time = time.time()
     st.session_state.moves = 0
     st.session_state.auto_solve_path = []
-    st.session_state.start_board = copy.deepcopy(st.session_state.board)
 
 board = st.session_state.board
 
-st.title(f"Welcome {player_name}! Solve the 3x3 Puzzle 🎯")
+# --- Game Title ---
+st.title(f"🎯 Welcome {player_name}! Solve the 3x3 Puzzle")
 
 col1, col2 = st.columns([2, 1])
 
-# --- Main Puzzle Area ---
+# --- Puzzle UI ---
 with col1:
     for i in range(size):
         cols = st.columns(size)
         for j in range(size):
-            if board[i][j] != 0:
-                if cols[j].button(str(board[i][j]), use_container_width=True, key=(i,j)):
+            tile = board[i][j]
+            if tile != 0:
+                if cols[j].button(str(tile), use_container_width=True, key=(i,j)):
                     x, y = get_blank(board)
                     if (i, j) in valid_moves(x, y, size):
                         board[x][y], board[i][j] = board[i][j], board[x][y]
                         st.session_state.moves += 1
-                        st.rerun()  # Instantly update the UI after each move.
+                        st.rerun()
+            else:
+                cols[j].empty()
 
-# --- Right Sidebar Info ---
+# --- Game Info Panel ---
 with col2:
-    st.subheader("Game Info")
+    st.subheader("🧠 Game Info")
     elapsed_time = int(time.time() - st.session_state.start_time)
-    st.write(f"⏱️ Time Elapsed: {elapsed_time} seconds")
-    st.write(f"🎮 Moves Made: {st.session_state.moves}")
-    st.write(f"Puzzle Size: 3x3")
+    st.write(f"⏱️ Time Elapsed: {elapsed_time} sec")
+    st.write(f"🕹️ Moves: {st.session_state.moves}")
+    st.write(f"📏 Puzzle Size: {size}x{size}")
 
-    if st.button("Solve with A*"):
+    if st.button("🧠 Solve with A*"):
         path = a_star(board, size)
         if path:
             st.session_state.auto_solve_path = path
-            st.success("✅ Auto-solving started!")
+            st.success("Solver is running...")
 
-    if st.button("Reset Game"):
+    if st.button("🔄 Reset Game"):
         st.session_state.board = create_board(size)
         st.session_state.moves = 0
         st.session_state.start_time = time.time()
         st.session_state.auto_solve_path = []
         st.rerun()
 
-    # Display the solution path in a presentable format
     if st.session_state.auto_solve_path:
-        st.subheader("A* Solution Path:")
-        moves_str = "\n".join([f"Move {i+1}: Move tile {board[x][y]} from ({x}, {y}) to ({nx}, {ny})" for i, (x, y, nx, ny) in enumerate(st.session_state.auto_solve_path)])
-        st.text(moves_str)
+        st.subheader("📋 A* Move Path:")
+        moves_str = "\n".join(
+            [f"{i+1}. Move tile {board[x][y]} from ({x},{y}) to ({nx},{ny})"
+             for i, (x, y, nx, ny) in enumerate(st.session_state.auto_solve_path)]
+        )
+        with st.expander("🔍 Show Moves"):
+            st.text(moves_str)
 
-        # Display final path as a string
-        final_path_str = " -> ".join([f"({x}, {y}) -> ({nx}, {ny})" for (x, y, nx, ny) in st.session_state.auto_solve_path])
-        st.subheader("Final Path (as String):")
-        st.write(final_path_str)
-
-st.divider()
-
-# --- Game Win Condition ---
-if sum(board, []) == list(range(1, size*size)) + [0]:
+# --- Puzzle Completion ---
+if sum(board, []) == list(range(1, size * size)) + [0]:
     elapsed_time = int(time.time() - st.session_state.start_time)
     st.balloons()
-    st.success(f"🎉 Congratulations {player_name}! Solved in {st.session_state.moves} moves and {elapsed_time} seconds!")
+    st.success(f"🎉 Congrats {player_name}! Solved in {st.session_state.moves} moves and {elapsed_time} seconds!")
 
-# --- Animate Auto Solving ---
+# --- Auto-solver animation ---
 if st.session_state.auto_solve_path:
-    # Pop the first move from the path
     move = st.session_state.auto_solve_path.pop(0)
     x, y, nx, ny = move
     board[x][y], board[nx][ny] = board[nx][ny], board[x][y]
-
-    # Display the move
-    st.write(f"Moving tile {board[nx][ny]} from ({x}, {y}) to ({nx}, {ny})")
-
-    # Add a small delay for animation effect
-    time.sleep(2)
-    st.rerun()
+    time.sleep(1)
+    st.rerun() 
