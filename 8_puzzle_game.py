@@ -6,12 +6,20 @@ import heapq
 import os
 
 # --- Music ---
-MUSIC_PATH = "https://drive.google.com/file/d/1o3H3K6Ns-rGAj5nICxCsRo2_zljma3WP/view?usp=sharing"
-if os.path.exists(MUSIC_PATH):
-    st.audio(MUSIC_PATH, format='audio/mp3', start_time=0)
+import streamlit as st
 
-# --- Page Config (MUST be first Streamlit command) ---
+# --- Music ---
+MUSIC_PATH = "https://drive.google.com/uc?export=download&id=1o3H3K6Ns-rGAj5nICxCsRo2_zljma3WP"
+st.audio(MUSIC_PATH, format="audio/mp3", start_time=0)
+
+# --- Page Config ---
 st.set_page_config(page_title="Colorful Sliding Puzzle", layout="wide")
+
+# --- Game Title ---
+st.title("🎯 Welcome to the Colorful Puzzle Game!")
+
+# Add the rest of your game code here
+
 
 # --- Custom CSS for colorful tiles and responsiveness ---
 st.markdown("""
